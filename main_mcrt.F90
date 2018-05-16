@@ -1,19 +1,51 @@
-!seed test
+!according to Kowal's code
+!Add:
+!    use parameters, only : get_parameter_integer, get_parameter_real  
+!    call get_parameter_integer("nn"  , nn   )
+!    in = nn
+!    jn = nn
+!    kn = nn
+!    call get_parameter_integer("ng"  , ng   )
+!    call get_parameter_real   ("xmin", xmin )
+!    call get_parameter_real   ("xmax", xmax )
+!    call get_parameter_real   ("ymin", ymin )
+!   call get_parameter_real   ("ymax", ymax )
 
 use omp_lib
 
-!from blast file
+!######### from blast file #########
+!density (1 code unit is how much?)
 integer, parameter ::      unitdens=3.1d3
+
+!unit length (1 code unit is how much?) 1pc (in cm)
+real*8, parameter ::      length=3.086e18
+
+!cross section for diffuse photons
+real*8, parameter ::      sigd=6.3d-18 ! in cm^2 
+
+real*8 ::  sigr0
+
+integer :: in = 3, jn =3, kn = 4
+
+!parameters in the module (not to alter)
 
 integer, dimension(:), allocatable :: seed_rank 
 
 integer :: remain
 
-integer :: nxg = 3, nyg =3, nzg = 4
+integer :: xmax = 1, ymax = 1, zmax = 1
+
+real, dimension (:), allocatable :: xface
+
+real, dimension (:), allocatable :: yface
+
+real, dimension (:), allocatable :: zface
 
 real, dimension (:, :, :), allocatable :: rhokap
 
-real, dimension (:, :, :), allocatable :: ntot
+real, dimension (:, :, :), allocatable :: nfrac
+
+real, dimension (:, :, :), allocatable :: dens
 
 integer, save :: iseed
 !$OMP THREADPRIVATE(iseed)
@@ -29,10 +61,15 @@ tseed = -abs(tseed)
 
 
 !allocate arrays*********************
-allocate(rhokap(nxg,nyg,nzg))
+allocate(rhokap(in,jn,kn))
 rhokap = 0
-allocate(ntot(nxg,nyg,nzg))
-ntot = 1
+allocate(dens(in,jn,kn))
+dens = 1
+allocate(nfrac(in,jn,kn))
+allocate(xface(in + 1))
+allocate(yface(in + 1))
+allocate(zface(in + 1))
+
 
 !***************start openmp
 !$omp parallel 
@@ -42,7 +79,7 @@ irank = omp_get_thread_num ( )  !finds which processor I am
 
 print*, -ran2(tseed), tseed
 
-print*, "number of cells", nxg*nyg*nzg
+print*, "number of cells", in*jn*kn
 print*, rhokap(:,:,:)
 
 !define different random numbers for each core
@@ -60,6 +97,8 @@ print*, "the seeds are:", seed_rank
 print*, "i'm processor", irank, "with iseed", iseed
 !$omp end parallel
 deallocate(seed_rank)
+
+!Do we need thi bit? won't openmp automatically deal with this?
 !$omp parallel 
 !photons divided between threads:
 
@@ -75,20 +114,54 @@ deallocate(seed_rank)
     print*, "i'm processor", irank, "with nphotons", nphotons
 !$omp end parallel 
 
+!Set up grid faces based on cell numeber
+
+      do i=1,in+1
+         xface(i)=(i-1)*2.*xmax/in
+      end do
+      do i=1,jn+1
+         yface(i)=(i-1)*2.*ymax/jn
+      end do
+      do i=1,kn+1
+         zface(i)=(i-1)*2.*zmax/kn
+      end do
+
+print*, "faces", xface(:)
+
 !set up uniform density grid
 
-print*, "density grid", ntot(:,:,:)
+print*, "density grid", dens(:,:,:)
 
-   do i = 1,nxg
-    do j = 1, nyg
-     do k = 1, nzg
-        ntot(i,j,k) = ntot(i,j,k)*unitdens
+   do i = 1,in
+    do j = 1, jn
+     do k = 1, kn
+        dens(i,j,k) = dens(i,j,k)*unitdens
      end do
     end do
   end do
 
-print*, "density grid", ntot
+print*, "density grid", dens
 
+!fing the cross section to be used for length unit in question:
+      sigr0=sigd*length !cross section*length unit (cm^3)
+
+!set up neutral fractions and opacities on the grid
+print*, "sigd", sigd
+print*, "length", length
+print*, "sigr", sigr0
+
+      do i=1,in
+       do j=1,jn
+        do k=1,kn
+!set neutral fraction very low (quicker convergence)
+           nfrac(i,j,k)=1.e-6
+!opacity = density*neutral fraction*cross section
+           rhokap(i,j,k)=dens(i,j,k)*nfrac(i,j,k)*sigr0
+        end do
+       end do
+      end do
+
+print*, "opacity grid", rhokap
 
   stop
 end
