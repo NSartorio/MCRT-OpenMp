@@ -1,0 +1,28 @@
+! number of photons
+integer, parameter ::      nphotons=100000
+!number of iterations
+integer, parameter ::      niter=10
+!number of sources
+integer, parameter ::      nsource = 1  
+!source location
+integer, parameter :: xp =
+integer, parameter :: yp =
+integer, parameter :: zp =  
+!temperature of neutral gas
+integer, parameter ::      tema=500
+!temperature of ionized gas
+integer, parameter ::      temb=8000.
+!luminosity (in 10^49 photons p/ second)
+integer, parameter ::      Q49=1.00
+!****Attributing lengths and densities to the simulation
+!unit length = 1pc (in cm)
+integer, parameter ::      length=3.086e18
+!unit density
+integer, parameter ::      unitdens=3.1d3 !in number of hydrogen atoms
+
+!****These values are taken from Osterbrock and Ferland
+!cross section for diffuse photons
+integer, parameter ::      sigd=6.3d-18 ! in cm^2 
+!recombination coefficient
+integer, parameter ::      alpha_a=5.25e-13 ! in /cm^3/s  for T=8000K
+
