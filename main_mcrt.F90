@@ -2,6 +2,9 @@
 
 use omp_lib
 
+!from blast file
+integer, parameter ::      unitdens=3.1d3
+
 integer, dimension(:), allocatable :: seed_rank 
 
 integer :: remain
@@ -9,6 +12,8 @@ integer :: remain
 integer :: nxg = 3, nyg =3, nzg = 4
 
 real, dimension (:, :, :), allocatable :: rhokap
+
+real, dimension (:, :, :), allocatable :: ntot
 
 integer, save :: iseed
 !$OMP THREADPRIVATE(iseed)
@@ -26,6 +31,8 @@ tseed = -abs(tseed)
 !allocate arrays*********************
 allocate(rhokap(nxg,nyg,nzg))
 rhokap = 0
+allocate(ntot(nxg,nyg,nzg))
+ntot = 1
 
 !***************start openmp
 !$omp parallel 
@@ -37,8 +44,6 @@ print*, -ran2(tseed), tseed
 
 print*, "number of cells", nxg*nyg*nzg
 print*, rhokap(:,:,:)
-
-
 
 !define different random numbers for each core
 !create a seed array
@@ -69,6 +74,20 @@ deallocate(seed_rank)
 
     print*, "i'm processor", irank, "with nphotons", nphotons
 !$omp end parallel 
+
+!set up uniform density grid
+
+print*, "density grid", ntot(:,:,:)
+
+   do i = 1,nxg
+    do j = 1, nyg
+     do k = 1, nzg
+        ntot(i,j,k) = ntot(i,j,k)*unitdens
+     end do
+    end do
+  end do
+
+print*, "density grid", ntot
 
 
   stop
