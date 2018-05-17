@@ -27,13 +27,22 @@ real*8 ::  sigr0
 
 integer :: in = 3, jn =3, kn = 4
 
+!photon source location:
+
+real, parameter :: source_x = 0
+real, parameter :: source_y = 0
+real, parameter :: source_z = 0
+
 !parameters in the module (not to alter)
 
 integer, dimension(:), allocatable :: seed_rank 
 
 integer :: remain
 
-integer :: xmax = 1, ymax = 1, zmax = 1
+real*8, save :: nxp,nyp,nzp
+!$OMP THREADPRIVATE(nxp,nyp,nzp)
+
+integer :: xmax = 0.5, ymax = 0.5, zmax = 0.5
 
 real, dimension (:), allocatable :: xface
 
@@ -128,43 +137,22 @@ deallocate(seed_rank)
 
 print*, "faces", xface(:)
 
-!set up uniform density grid
 
-print*, "density grid", dens(:,:,:)
+print*, "my source location is ", source_x, source_y, source_z
 
-   do i = 1,in
-    do j = 1, jn
-     do k = 1, kn
-        dens(i,j,k) = dens(i,j,k)*unitdens
-     end do
-    end do
-  end do
+     
+!emitting photons from origin
 
-print*, "density grid", dens
+!$omp parallel
+print*, "i'm processor", irank, "with iseed", iseed
+call mcemit(nxp,nyp,nzp,iseed)
+!$omp end parallel
 
-!fing the cross section to be used for length unit in question:
-      sigr0=sigd*length !cross section*length unit (cm^3)
-
-!set up neutral fractions and opacities on the grid
-print*, "sigd", sigd
-print*, "length", length
-print*, "sigr", sigr0
-
-      do i=1,in
-       do j=1,jn
-        do k=1,kn
-!set neutral fraction very low (quicker convergence)
-           nfrac(i,j,k)=1.e-6
-!opacity = density*neutral fraction*cross section
-           rhokap(i,j,k)=dens(i,j,k)*nfrac(i,j,k)*sigr0
-        end do
-       end do
-      end do
-
-print*, "opacity grid", rhokap
 
   stop
 end
+
+!###################################################################################
       FUNCTION ran2(idum)
       INTEGER idum,IM1,IM2,IMM1,IA1,IA2,IQ1,IQ2,IR1,IR2,NTAB,NDIV
       real ran2,AM,EPS,RNMX
@@ -198,3 +186,64 @@ end
       ran2=min(AM*iy,RNMX)
       return
       END
+!############################################################################################
+
+
+subroutine mcemit(nxp,nyp,nzp,iseed)
+
+implicit none
+!uses the monte carlo method to select a direction
+!of travel for the photon and sets the photon
+!at the position of the source.
+
+!communicated variables
+ real*8 :: nxp,nyp,nzp
+!!$OMP THREADPRIVATE(nxp,nyp,nzp)
+!local variables
+!random number
+ real  ran2
+!!$OMP THREADPRIVATE(ran2)
+!the value of two pi
+ real*8 , parameter :: twopi = 8.*atan(1.)
+!the seed of each processor
+ integer iseed
+!!$OMP THREADPRIVATE(iseed)
+ real*8 sint,cost,sinp,cosp,phi
+
+
+!***** emit photon isotropically from point source location
+print*, "i'm processor with iseed", iseed
+
+!angle theta (measured from z axis) between 0 and pi
+ cost=2.*ran2(iseed)-1        !value btw -1 and 1
+ sint=sqrt(1.-cost*cost)      !value btw 0 and 1
+
+!angle phi between 0 and 2pi
+ phi=twopi*ran2(iseed)
+ cosp=cos(phi)
+ sinp=sin(phi)
+
+!***** Set photon direction cosines for direction of travel 
+ nxp=sint*cosp  
+ nyp=sint*sinp
+ nzp=cost
+
+print*, "my photon direction is", nxp, nyp, nzp
+
+ return
+end
+
+
+!############################################################################################
+
+
+
+!###############################################################################
+
+
+
+
+
+
+
+

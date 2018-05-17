@@ -8,15 +8,13 @@ integer :: i
 
 integer, parameter :: nsources = 2
 
-real, parameter :: 1s_x = 0
-real, parameter :: 1s_y = 0
-real, parameter :: 1s_z = 0
+real, parameter :: s_x(1) = 0
+real, parameter :: s_y(1) = 0
+real, parameter :: s_z(1) = 0
 
-real, parameter :: 2s_x = 0.5
-real, parameter :: 2s_y = 0
-real, parameter :: 2s_z = 0
-
-integer, parameter :: nsources = 3
+real, parameter :: s_x(2) = 0.5
+real, parameter :: s_y(2) = 0
+real, parameter :: s_z(2) = 0
 
 real, dimension (:), allocatable :: xsource
 
@@ -24,15 +22,16 @@ real, dimension (:), allocatable :: ysource
 
 real, dimension (:), allocatable :: zsource
 
-
+print*, s_x1, s_x2
 
 do i= 1, nsources
-   write(x, '(I4.4, "s_x")') i
-   write(y, '(I4.4, "s_y")') i
-   write(z, '(I4.4, "s_z")') i
-   xsource(i) = x
-   ysource(i) = y
-   zsource(i) = z
+   write(x, '( "s_x", I1.1)') i
+   write(y, '( "s_y", I1.1)') i
+   write(z, '( "s_z", I1.1)') i
+   print*, x
+!   xsource(i) = x
+!   ysource(i) = y
+!   zsource(i) = z
 end do 
 
 end 
